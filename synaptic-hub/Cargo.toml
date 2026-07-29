@@ -1,0 +1,22 @@
+# genflow-synaptic-hub — Dual-layer event bus
+# In-process: tokio mpsc channels (zero-cost, ultra-fast)
+# Cross-container: Redis pub/sub (production-grade, persisted)
+# Inspired by pema-platform-v2's "Synaptic Hub" — central event convergence
+
+[package]
+name = "genflow-synaptic-hub"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+redis = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+genflow-receptors = { workspace = true }
+genflow-shared-infra = { workspace = true }

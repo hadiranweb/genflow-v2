@@ -1,0 +1,14 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+*.rs text diff=rust
+*.toml text diff=toml
+*.sql text
+*.md text
+*.json text
+*.yaml text
+*.yml text
+*.lock text
+
+# Rust binary
+*.rlib binary
+*.so binary

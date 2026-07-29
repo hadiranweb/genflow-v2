@@ -1,0 +1,194 @@
+# =============================================================================
+# GenFlow v2 — Docker Compose
+#
+# Services: API (Rust) + Web (Remix) + PostgreSQL + Redis
+# Usage:
+#   Development: docker compose up -d
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# =============================================================================
+
+version: "3.9"
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# ============================================================
+# Services
+# ============================================================
+services:
+
+  # ----------------------------------------------------------
+  # API Gateway (Rust — Axum)
+  # ----------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      cache_from:
+        - type=gha
+    container_name: genflow-api
+    ports:
+      - "${API_PORT:-3000}:3000"
+    environment:
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3000
+      - DATABASE_URL=postgres://${DB_USER:-genflow}:${DB_PASS:-genflow}@db:5432/${DB_NAME:-genflow}
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - genflow
+    # Resource limits — adjust for your server
+    deploy:
+      resources:
+        limits:
+          cpus: "${API_CPU_LIMIT:-2}"
+          memory: "${API_MEM_LIMIT:-1G}"
+        reservations:
+          cpus: "${API_CPU_RES:-0.5}"
+          memory: "${API_MEM_RES:-256M}"
+
+  # ----------------------------------------------------------
+  # Web Frontend (Remix — Node.js)
+  # ----------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      cache_from:
+        - type=gha
+    container_name: genflow-web
+    ports:
+      - "${WEB_PORT:-3001}:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://api:3000
+      - NODE_TELEMETRY_DISABLED=1
+    depends_on:
+      api:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/',r=>{process.exit(r.statusCode===200?0:1)}).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - genflow
+    deploy:
+      resources:
+        limits:
+          cpus: "${WEB_CPU_LIMIT:-1}"
+          memory: "${WEB_MEM_LIMIT:-512M}"
+        reservations:
+          cpus: "${WEB_CPU_RES:-0.25}"
+          memory: "${WEB_MEM_RES:-128M}"
+
+  # ----------------------------------------------------------
+  # PostgreSQL 16
+  # ----------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: genflow-db
+    environment:
+      - POSTGRES_USER=${DB_USER:-genflow}
+      - POSTGRES_PASSWORD=${DB_PASS:-genflow}
+      - POSTGRES_DB=${DB_NAME:-genflow}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-genflow} -d ${DB_NAME:-genflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - genflow
+    deploy:
+      resources:
+        limits:
+          cpus: "${DB_CPU_LIMIT:-2}"
+          memory: "${DB_MEM_LIMIT:-2G}"
+        reservations:
+          cpus: "${DB_CPU_RES:-0.5}"
+          memory: "${DB_MEM_RES:-512M}"
+
+  # ----------------------------------------------------------
+  # Redis 7 (Cache + Event Bus)
+  # ----------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: genflow-redis
+    command: redis-server --appendonly yes --save 60 1 --lfu-decay-time 1
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    logging: *default-logging
+    networks:
+      - genflow
+    deploy:
+      resources:
+        limits:
+          cpus: "${REDIS_CPU_LIMIT:-1}"
+          memory: "${REDIS_MEM_LIMIT:-512M}"
+        reservations:
+          cpus: "${REDIS_CPU_RES:-0.1}"
+          memory: "${REDIS_MEM_RES:-64M}"
+
+# ============================================================
+# Volumes
+# ============================================================
+volumes:
+  pgdata:
+    name: genflow-pgdata
+    driver: local
+  redisdata:
+    name: genflow-redisdata
+    driver: local
+
+# ============================================================
+# Networks
+# ============================================================
+networks:
+  genflow:
+    name: genflow
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "172.28.0.0/16"

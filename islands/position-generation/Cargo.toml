@@ -1,0 +1,23 @@
+# genflow-position-generation — Position Generation Island
+# Business analysis → Need discovery → Graph → Calibration → Position generation
+
+[package]
+name = "genflow-position-generation"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+sqlx = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+validator = { workspace = true }
+genflow-receptors = { workspace = true }
+genflow-shared-infra = { workspace = true }
+genflow-synaptic-hub = { workspace = true }
+genflow-mcp-registry = { workspace = true }

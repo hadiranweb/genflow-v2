@@ -1,0 +1,24 @@
+# genflow-candidate-matching — Candidate Matching Island
+# 5-Axis Matching Engine: Capability, Output KPI, Business Gap, Work Style, Growth
+
+[package]
+name = "genflow-candidate-matching"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+sqlx = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+validator = { workspace = true }
+genflow-receptors = { workspace = true }
+genflow-shared-infra = { workspace = true }
+genflow-synaptic-hub = { workspace = true }
+genflow-mcp-registry = { workspace = true }
+genflow-position-generation = { workspace = true }

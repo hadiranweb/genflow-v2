@@ -1,0 +1,82 @@
+# GenFlow v2 — Business-First Position Generation & Candidate Matching Platform
+# Hybrid Island Architecture: Gateway + Islands (workspace, single deploy)
+# Inspired by pema-platform-v2 Island/Cell/Synaptic topology
+
+[workspace]
+resolver = "2"
+members = [
+    "receptors/genflow-receptors",
+    "shared-infra",
+    "synaptic-hub",
+    "islands/mcp-registry",
+    "islands/position-generation",
+    "islands/candidate-matching",
+    "islands/dashboard-analytics",
+    "gateway",
+]
+
+[workspace.package]
+version = "2.0.0"
+edition = "2021"
+rust-version = "1.88"
+license = "PROPRIETARY"
+repository = "https://github.com/hadiranweb/genflow"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Web framework
+axum = { version = "0.7", features = ["macros", "ws"] }
+tower = { version = "0.4", features = ["full"] }
+tower-http = { version = "0.5", features = ["cors", "trace", "auth", "timeout"] }
+
+# Database
+sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "uuid", "chrono", "json", "migrate"] }
+
+# Redis
+redis = { version = "0.24", features = ["tokio-comp", "aio"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# UUID
+uuid = { version = "1.6", features = ["v4", "v7", "serde"] }
+
+# Time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Auth
+jsonwebtoken = "9.2"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-opentelemetry = "0.22"
+opentelemetry = "0.21"
+prometheus = "0.13"
+
+# Crypto / Hashing
+sha2 = "0.10"
+hex = "0.4"
+
+# Validation
+validator = { version = "0.16", features = ["derive"] }
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Testing
+mockall = "0.12"
+async-trait = "0.1"
+
+# Internal crates (self-references)
+genflow-receptors = { path = "receptors/genflow-receptors" }
+genflow-shared-infra = { path = "shared-infra" }
+genflow-synaptic-hub = { path = "synaptic-hub" }
+genflow-mcp-registry = { path = "islands/mcp-registry" }
+genflow-position-generation = { path = "islands/position-generation" }
+genflow-candidate-matching = { path = "islands/candidate-matching" }
+genflow-dashboard-analytics = { path = "islands/dashboard-analytics" }

@@ -1,0 +1,11 @@
+# GenFlow Cargo configuration
+# MSRV: Rust 1.88 (locked)
+
+[target.x86_64-unknown-linux-gnu]
+linker = "x86_64-linux-gnu-gcc"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

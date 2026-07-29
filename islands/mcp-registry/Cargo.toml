@@ -1,0 +1,27 @@
+# genflow-mcp-registry — MCP Registry Island
+# Ultra-fine-grained MCP: each MCP Type as a Cell
+# Registry + Cache + Builder + Resolver runtime
+
+[package]
+name = "genflow-mcp-registry"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+sqlx = { workspace = true }
+redis = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+validator = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+async-trait = { workspace = true }
+genflow-receptors = { workspace = true }
+genflow-shared-infra = { workspace = true }
+genflow-synaptic-hub = { workspace = true }

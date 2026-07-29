@@ -1,0 +1,42 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Rust
+target
+**/target
+**/deps
+
+# Build outputs
+.next
+out
+dist
+build
+
+# IDE
+.idea
+.vscode
+*.swp
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env.local
+.env*.local
+
+# Docker volumes
+postgres_data
+redis_data
+qdrant_data
+
+# Misc
+*.local
+.DS_Store
+Thumbs.db

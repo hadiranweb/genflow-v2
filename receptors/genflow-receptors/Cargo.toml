@@ -1,0 +1,20 @@
+# genflow-receptors — Shared domain types (no DB/async deps)
+# Pure Rust types that every island can depend on
+# Like pema-platform-v2's "rust-commons" receptor
+
+[package]
+name = "genflow-receptors"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+thiserror = { workspace = true }
+validator = { workspace = true }
+rand = "0.8"
