@@ -28,7 +28,7 @@ env:
 
 jobs:
   release:
-    name: Release v${{ github.event.inputs.version }}
+    name: Release v${{ inputs.version }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,7 +39,7 @@ jobs:
       - name: ✅ Validate version format
         id: validate
         run: |
-          VERSION="${{ github.event.inputs.version }}"
+          VERSION="${{ inputs.version }}"
           if ! echo "$VERSION" | grep -P '^\d+\.\d+\.\d+' > /dev/null; then
             echo "❌ Invalid version format: $VERSION"
             echo "   Expected format: 2.1.0"
@@ -47,7 +47,12 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-          echo "release_title=${{ github.event.inputs.title || format('GenFlow v{0}', VERSION) }}" >> $GITHUB_OUTPUT
+          TITLE_INPUT="${{ inputs.title }}"
+          if [ -z "$TITLE_INPUT" ]; then
+            echo "release_title=GenFlow v$VERSION" >> $GITHUB_OUTPUT
+          else
+            echo "release_title=$TITLE_INPUT" >> $GITHUB_OUTPUT
+          fi
 
       - name: 📦 Verify workspace compiles
         run: |
@@ -85,19 +90,23 @@ jobs:
           name: ${{ steps.validate.outputs.release_title }}
           body: ${{ steps.notes.outputs.notes }}
           draft: false
-          prerelease: ${{ contains(github.event.inputs.version, 'beta') || contains(github.event.inputs.version, 'rc') }}
+          prerelease: ${{ contains(inputs.version, 'beta') || contains(inputs.version, 'rc') }}
 
       - name: 🔑 Log in to GHCR
-        if: ${{ !github.event.inputs.dry_run }}
+        if: ${{ !inputs.dry_run }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        if: ${{ !inputs.dry_run }}
+        uses: docker/setup-buildx-action@v3
+
       - name: 🐳 Build and push API image (versioned)
-        if: ${{ !github.event.inputs.dry_run }}
-        uses: docker/build-push-action@v6
+        if: ${{ !inputs.dry_run }}
+        uses: docker/build-push-action@v5
         with:
           context: .
           file: Dockerfile
@@ -105,10 +114,12 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/api:${{ steps.validate.outputs.version }}
             ghcr.io/${{ github.repository }}/api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: 🐳 Build and push Web image (versioned)
-        if: ${{ !github.event.inputs.dry_run }}
-        uses: docker/build-push-action@v6
+        if: ${{ !inputs.dry_run }}
+        uses: docker/build-push-action@v5
         with:
           context: ./apps/web
           file: apps/web/Dockerfile
@@ -116,6 +127,8 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}/web:${{ steps.validate.outputs.version }}
             ghcr.io/${{ github.repository }}/web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: 📋 Release summary
         run: |

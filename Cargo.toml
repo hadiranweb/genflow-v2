@@ -12,6 +12,7 @@ members = [
     "islands/position-generation",
     "islands/candidate-matching",
     "islands/dashboard-analytics",
+    "islands/data-cleaning",
     "gateway",
 ]
 
@@ -79,4 +80,6 @@ genflow-synaptic-hub = { path = "synaptic-hub" }
 genflow-mcp-registry = { path = "islands/mcp-registry" }
 genflow-position-generation = { path = "islands/position-generation" }
 genflow-candidate-matching = { path = "islands/candidate-matching" }
-genflow-dashboard-analytics = { path = "islands/dashboard-analytics" }
+genflow-dashboard-analytics = { path = "islands/dashboard-analytics",
+genflow-data-cleaning = { path = "islands/data-cleaning" }
+    "islands/data-cleaning" }

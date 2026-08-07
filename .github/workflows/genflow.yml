@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main-platform, v2-island-architecture]
+    branches: [main, main-platform, v2-island-architecture]
   pull_request:
-    branches: [main-platform]
+    branches: [main, main-platform]
 
 permissions: write-all
 
@@ -17,9 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "checkout OK"
-      - run: rustup toolchain install 1.88 --component clippy,rustfmt --no-self-update 2>&1
-      - run: rustup default 1.88
+      - name: Setup Rust 1.88
+        run: |
+          rustup toolchain install 1.88 --component clippy,rustfmt --no-self-update
+          rustup default 1.88
+          cargo --version
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test --workspace --lib --locked --exclude genflow-gateway

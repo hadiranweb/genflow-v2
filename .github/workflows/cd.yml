@@ -25,9 +25,9 @@ env:
 
 jobs:
   deploy:
-    name: Deploy to ${{ github.event.inputs.environment }}
+    name: Deploy to ${{ inputs.environment }}
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment }}
+    environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,45 +36,33 @@ jobs:
       - name: 📝 Prepare deployment variables
         id: vars
         run: |
-          ENV=${{ github.event.inputs.environment }}
           echo "deploy_dir=/opt/genflow" >> $GITHUB_OUTPUT
           echo "compose_file=docker-compose.yml" >> $GITHUB_OUTPUT
           echo "env_file=.env.production" >> $GITHUB_OUTPUT
 
-      - name: 🔑 Deploy via SSH
+      - name: 🔑 Deploy via SSH (staging)
+        if: ${{ inputs.environment == 'staging' }}
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets[format('{0}_HOST', github.event.inputs.environment)] }}
-          username: ${{ secrets[format('{0}_USER', github.event.inputs.environment)] }}
-          key: ${{ secrets[format('{0}_SSH_KEY', github.event.inputs.environment)] }}
-          port: ${{ secrets[format('{0}_PORT', github.event.inputs.environment)] || 22 }}
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_PORT || 22 }}
           script: |
             set -e
-
-            echo "🚀 GenFlow CD — target: ${{ github.event.inputs.environment }}"
-            echo "   Image tag: ${{ github.event.inputs.image_tag }}"
+            echo "🚀 GenFlow CD — target: staging"
+            echo "   Image tag: ${{ inputs.image_tag }}"
             echo "   Timestamp: $(date -u)"
-
             cd ${{ steps.vars.outputs.deploy_dir }}
-
-            # Pull the latest docker-compose files from the repo
             if [ ! -f "${{ steps.vars.outputs.compose_file }}" ]; then
-              echo "❌ docker-compose.yml not found in ${deploy_dir}"
+              echo "❌ docker-compose.yml not found"
               exit 1
             fi
-
-            # Export image tag for docker-compose to consume
-            export IMAGE_TAG=${{ github.event.inputs.image_tag }}
-
-            # Pull new images
+            export IMAGE_TAG=${{ inputs.image_tag }}
             echo "📦 Pulling images..."
             docker compose pull
-
-            # Graceful restart with zero-downtime strategy
             echo "🔄 Recreating services..."
             docker compose up -d --remove-orphans
-
-            # Health check
             echo "🏥 Running health check..."
             sleep 10
             HEALTH_URL="http://localhost:3000/health"
@@ -86,27 +74,67 @@ jobs:
               fi
               if [ "$i" = "10" ]; then
                 echo "❌ Health check failed after 10 attempts"
-                echo "   Last logs:"
                 docker compose logs --tail=20 api web
                 exit 1
               fi
-              echo "⏳ Waiting for service... (attempt $i/10, status=$STATUS)"
+              echo "⏳ Waiting... (attempt $i/10, status=$STATUS)"
               sleep 5
             done
-
-            # Prune old images
             echo "🧹 Cleaning up..."
             docker image prune -f --filter "until=24h"
+            echo "✅ Deployment complete!"
 
+      - name: 🔑 Deploy via SSH (production)
+        if: ${{ inputs.environment == 'production' }}
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script: |
+            set -e
+            echo "🚀 GenFlow CD — target: production"
+            echo "   Image tag: ${{ inputs.image_tag }}"
+            echo "   Timestamp: $(date -u)"
+            cd ${{ steps.vars.outputs.deploy_dir }}
+            if [ ! -f "${{ steps.vars.outputs.compose_file }}" ]; then
+              echo "❌ docker-compose.yml not found"
+              exit 1
+            fi
+            export IMAGE_TAG=${{ inputs.image_tag }}
+            echo "📦 Pulling images..."
+            docker compose pull
+            echo "🔄 Recreating services..."
+            docker compose up -d --remove-orphans
+            echo "🏥 Running health check..."
+            sleep 10
+            HEALTH_URL="http://localhost:3000/health"
+            for i in $(seq 1 10); do
+              STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" 2>/dev/null || echo "000")
+              if [ "$STATUS" = "200" ]; then
+                echo "✅ Health check passed (attempt $i/10)"
+                break
+              fi
+              if [ "$i" = "10" ]; then
+                echo "❌ Health check failed after 10 attempts"
+                docker compose logs --tail=20 api web
+                exit 1
+              fi
+              echo "⏳ Waiting... (attempt $i/10, status=$STATUS)"
+              sleep 5
+            done
+            echo "🧹 Cleaning up..."
+            docker image prune -f --filter "until=24h"
             echo "✅ Deployment complete!"
 
       - name: 📋 Deployment summary
         run: |
-          echo "## ✅ Deployed ${{ github.event.inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Deployed ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Variable | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Environment | ${{ github.event.inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Image tag | ${{ github.event.inputs.image_tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image tag | ${{ inputs.image_tag }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Trigger | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Timestamp | $(date -u) |" >> $GITHUB_STEP_SUMMARY
