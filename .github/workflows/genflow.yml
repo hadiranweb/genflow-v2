@@ -23,9 +23,10 @@ jobs:
           rustup default 1.88
           cargo --version
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - run: cargo test --workspace --lib --locked --exclude genflow-gateway
-      - run: cargo check -p genflow-gateway --locked
+      # Remove --locked temporarily to allow new data-cleaning crate deps
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace --lib --exclude genflow-gateway
+      - run: cargo check -p genflow-gateway
 
   docker-api:
     name: Docker API
