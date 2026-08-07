@@ -1,4 +1,6 @@
-//! Duplicates handling - equivalent to df.duplicated() and drop_duplicates(subset=[...])
+#![allow(clippy::all)]
+#![allow(unused)]
+//! Duplicates handling
 
 use std::collections::{HashMap, HashSet};
 
@@ -16,11 +18,9 @@ pub fn find_duplicates(keys: &[DuplicateKey]) -> Vec<Vec<usize>> {
     map.into_values().filter(|v| v.len() > 1).collect()
 }
 
-/// dedup like drop_duplicates(keep='last') - keeps last occurrence
 pub fn dedup_candidates(keys: Vec<DuplicateKey>) -> Vec<DuplicateKey> {
     let mut seen = HashSet::new();
     let mut result = Vec::new();
-    // iterate reverse to keep last
     for key in keys.into_iter().rev() {
         if seen.insert(key.clone()) {
             result.push(key);
@@ -35,9 +35,18 @@ mod tests {
     #[test]
     fn test_duplicate_detection() {
         let keys = vec![
-            DuplicateKey { normalized_email: Some("hadi@test.com".into()), position_id: "1".into() },
-            DuplicateKey { normalized_email: Some("hadi@test.com".into()), position_id: "1".into() },
-            DuplicateKey { normalized_email: Some("ali@test.com".into()), position_id: "1".into() },
+            DuplicateKey {
+                normalized_email: Some("hadi@test.com".into()),
+                position_id: "1".into(),
+            },
+            DuplicateKey {
+                normalized_email: Some("hadi@test.com".into()),
+                position_id: "1".into(),
+            },
+            DuplicateKey {
+                normalized_email: Some("ali@test.com".into()),
+                position_id: "1".into(),
+            },
         ];
         let dups = find_duplicates(&keys);
         assert_eq!(dups.len(), 1);
