@@ -23,6 +23,7 @@ COPY islands/mcp-registry/Cargo.toml islands/mcp-registry/
 COPY islands/position-generation/Cargo.toml islands/position-generation/
 COPY islands/candidate-matching/Cargo.toml islands/candidate-matching/
 COPY islands/dashboard-analytics/Cargo.toml islands/dashboard-analytics/
+COPY islands/data-cleaning/Cargo.toml islands/data-cleaning/
 COPY gateway/Cargo.toml gateway/
 
 # Dummy sources to compile only dependencies
@@ -40,6 +41,8 @@ RUN mkdir -p receptors/genflow-receptors/src \
   && echo "pub fn dummy() {}" > islands/candidate-matching/src/lib.rs \
   && mkdir -p islands/dashboard-analytics/src/services \
   && echo "pub fn dummy() {}" > islands/dashboard-analytics/src/lib.rs \
+  && mkdir -p islands/data-cleaning/src \
+  && echo "pub fn dummy() {}" > islands/data-cleaning/src/lib.rs \
   && mkdir -p gateway/src \
   && echo "fn main() {}" > gateway/src/main.rs
 
